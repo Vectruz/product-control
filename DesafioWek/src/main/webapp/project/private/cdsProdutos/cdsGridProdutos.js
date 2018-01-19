@@ -70,7 +70,7 @@ app.controller('CdsGridProdutosCrtl', ['$scope', '$http', '$log','$rootScope', '
    
   	//---- row update grid
 	$scope.update = function ( row ) {
-    	CdsProdutosService.update(row,function(response) {  
+    	CdsProdutosService.update(row._id, function(response) {  
     		
     		toastr.success(response.message);
 			$scope.load();

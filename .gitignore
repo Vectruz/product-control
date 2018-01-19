@@ -1,6 +1,4 @@
- DesafioWek/src/main/webapp/lib/node_modules/
- DesafioWek/src/main/webapp/lib/node_modules/**/*
- node_modules/**/*
- RemoteSystemsTempFiles/
- Servers/
- .metadata/
+node_modules
+ RemoteSystemsTempFiles
+ Servers
+ .metadata
