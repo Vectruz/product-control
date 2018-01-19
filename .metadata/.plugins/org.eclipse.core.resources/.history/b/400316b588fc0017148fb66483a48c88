@@ -1,4 +1,0 @@
-app.controller('CdsProdutos', [ '$scope', '$rootScope', '$location', 'toastr', 'UserService',
-					      function( $scope,  $rootScope,  $location, toastr, UserService ){
-	
-}]);
