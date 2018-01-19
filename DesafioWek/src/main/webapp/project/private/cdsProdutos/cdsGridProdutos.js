@@ -70,23 +70,13 @@ app.controller('CdsGridProdutosCrtl', ['$scope', '$http', '$log','$rootScope', '
    
   	//---- row update grid
 	$scope.update = function ( row ) {
-		
-		var t = row._id;
-    	CdsProdutosService.update(row, function(response) {  
+    	CdsProdutosService.update(row,function(response) {  
     		
     		toastr.success(response.message);
 			$scope.load();
     	}), function(err) {    		
     		toastr.error('Erro' + err.message);
     	}
-		
-		/*
-		CdsProdutosService.update ( row, function( response ) {			
-			toastr.success(response.message);
-			$scope.load();
-		}, function (err) {	
-			toastr.error( 'Erro ' + err.data);
-		})*/
 	};
     
 	$scope.aceptdelet = function () {
