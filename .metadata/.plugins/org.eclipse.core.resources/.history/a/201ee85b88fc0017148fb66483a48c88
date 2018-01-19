@@ -1,0 +1,433 @@
+app.controller('ExpenseGridCrtl', ['$scope','$http','uiGridExporterConstants', '$log', '$rootScope', 'ExpenseService','SubexpenseService', '$location', 'toastr', '$cookies', 
+	'UserService', 'GenreService', 'CostCenterService', 'uiGridConstants',	
+	
+	function($scope, $http, uiGridExporterConstants, $log, $rootScope, ExpenseService, SubexpenseService, $location, toastr, $cookies,
+			 UserService, GenreService, CostCenterService,  uiGridConstants) {
+	
+	//cookie
+	$scope.cookie = $cookies.getObject('return');	
+	$scope.operacional;
+	$scope.adminstrativo;
+
+	if ( $scope.cookie.Status == "Operacional" ) {	
+		$scope.userpdf = $scope.cookie.user + ' Operacional';
+		$scope.operacional = true;
+	}else{
+		$scope.userpdf = $scope.cookie.user + ' ' + 'Administrador';
+		$scope.operacional = false
+	}
+	if ( $scope.cookie.Status == "Administrador" ) {
+		$scope.adminstrativo = true
+	}else{
+		$scope.adminstrativo = false
+	}
+	//End cookie
+	
+	$scope.gridOptions = {	
+			
+		enableRowSelection: true,
+		enableSelectAll: true,
+		selectionRowHeaderWidth: 35,
+		rowHeight: 35,
+		showGridFooter:true,	
+		enablePaginationControls: false,
+	    enableRowSelection: true,
+		paginationPageSize: 10,
+	    expandableRowTemplate: 'expense/expenseExpandleRowTemplateRodrigo.html',
+	    expandableRowHeight: 150,
+	    
+	    expandableRowScope: {	    	
+	    	load: function(row){ // CARREGANDO centro de custo e tipo de despesa para o form de cadastrar do sub despesa
+	    		GenreService.query(function( genres ) {				
+	    			$scope.typegenres = genres;	
+	    		}, function( error ) {		
+	    			toastr.error( error );
+	    		});		
+	    		CostCenterService.query(function( costcenters ) {				
+	    			$scope.costcenters = costcenters;
+	    		}, function( error ) {			 
+	    			toastr.error( error );
+	    		});
+	    		$scope.rowselected = row.grid.parentRow.entity;
+	    	}
+	    }   
+	};
+	
+	$scope.expenses = [];
+	$scope.expense = [];
+	$scope.rows = [];
+	$scope.costcenters = [];
+	$scope.typegenres = []; 
+    exporterCsvFilename: 'despesas.csv';
+	
+	$scope.gridOptions.columnDefs = [
+		{ 
+			field: 'description',
+			width: 200,
+			exporterSuppressExport: false,
+			displayName: 'Descrição', 
+			enableCellEdit: false,
+			
+			cellTooltip: 
+			function( row, col ) {
+		      return 'Descrição: ' + row.entity.description;
+		    }, headerTooltip: 
+		    function( col ) {
+		    	return 'Titulo: ' + col.displayName;
+		    }
+		},
+		{ 
+			field: 'date1', 
+			width: 135,
+			exporterSuppressExport: false,
+			displayName: 'Data Inicial ', 
+			enableCellEdit: false,
+			
+			cellTooltip: 
+			function( row, col ) {
+		      return 'Data Inicial: ' + row.entity.date1;
+		    }, headerTooltip: 
+		    function( col ) {
+		    	return 'Titulo: ' + col.displayName;
+		    }
+		},
+		{ 
+			field: 'date2', 
+			width: 135,
+			exporterSuppressExport: false,
+			displayName: 'Data Final ', 
+			enableCellEdit: false,
+			
+			cellTooltip: 
+			function( row, col ) {
+		      return 'Data Final: ' + row.entity.date2;
+		    }, headerTooltip: 
+		    function( col ) {
+		    	return 'Titulo: ' + col.displayName;
+		    }
+		},
+		{ 
+			field: 'clientName', 
+			width: 200,
+			exporterSuppressExport: false,
+			displayName: 'Nome do cliente ', 
+			enableCellEdit: false,
+			
+			cellTooltip: 
+			function( row, col ) {
+		      return 'Data Inicial: ' + row.entity.clientName;
+		    }, headerTooltip: 
+		    function( col ) {
+		    	return 'Titulo: ' + col.displayName;
+		    }
+		},
+		{ 
+			field: 'valueInAdvace', 
+			width: 205,
+			exporterSuppressExport: false,
+			displayName: 'Valor de Adiantamento', 
+			enableCellEdit: false,		
+			
+			cellTooltip: 
+			function( row, col ) {
+		      return 'Valor de Adiantamento: R$ ' + row.entity.valueInAdvace;
+		    }, headerTooltip: 
+		    function( col ) {
+		    	return 'Titulo: ' + col.displayName;
+		    }
+		},
+		{ 
+			field: 'userOid', 
+			width: 200,
+			exporterSuppressExport: false,
+			displayName: 'Usuario', 
+			enableCellEdit: false,
+			
+			cellTooltip: 
+			function( row, col ) {
+			  return 'Usuario: ' + row.entity.userOid;
+			}, headerTooltip: 
+			function( col ) {
+				return 'Titulo: ' + col.displayName;
+			}
+		},
+	]; 
+	// ---- ROWS checkeds or unchecked		
+	
+	$scope.gridOptions.multiSelect = true;
+
+	$scope.toggleMultiSelect = function() {
+		$scope.gridApi.selection.setMultiSelect(!$scope.gridApi.grid.options.multiSelect);
+    };
+    $scope.selectAll = function() {
+    	$scope.gridApi.selection.selectAllRows();
+    };
+ 
+	$scope.load = function() { // load all	
+		ExpenseService.query($scope.cookie, function( expense ) {
+			
+			$scope.expense = expense;	//salvando no scope as despesas
+			$scope.gridOptions.data = expense;		 		
+			$scope.loadSubExp(); // chaman
+			
+		}, function( error ) {			 
+			toastr.error( error );
+		});
+	};	
+	
+	$scope.loadSubExp = function() {
+		
+		var objFilho = {};
+		objFilho.id = '01';
+		objFilho.name = 'Rodrigo Filho';
+		$scope.expense.expenseDaughter;
+		
+		for ( var i = 0; i < $scope.expense.length; i++ ) {			
+						
+			$scope.expense[i].subGridOptions = {
+			enableRowSelection: true,
+		
+			columnDefs: [ 		  // montando a sub grid
+				/*{
+					width: 150,
+					name: '123', 
+					cellTemplate:'<button data-target="modal4" class="btn modal-trigger custom-bottom-edit" ng-click="grid.appScope.load(row)">'
+							+'<i class="material-icons custom-icones">add</i>{{$scope.parent}}</button>'
+				},				
+				{
+					width: 150,
+					name: 'teste', 
+					cellTemplate:'<button class="btn primary left"  ng-click="grid.appScope.clickMe()">teste</button> '
+				},*/		  
+				{ 
+					field: 'code',
+					width: 180,
+					exporterSuppressExport: false,
+					displayName: 'Número nota / recibo ', 
+					enableCellEdit: false, 
+					type: "number",
+						
+					cellTooltip: 
+					function( row, col ) {
+					  return 'Número: ' + row.entity.code;
+					}, headerTooltip: 
+					function( col ) {
+						return 'Titulo: ' + col.displayName;
+					}
+				},
+				{ 
+					field: 'typeOid', 
+					width: 150,
+					exporterSuppressExport: false,
+					displayName: 'Tipo despesa', 
+					enableCellEdit: false,				
+					cellTooltip: 
+						
+					function( row, col ) {
+						return 'Tipo de despesa: ' + row.entity.typeOid;
+					}, headerTooltip: 
+					   function( col ) {
+					   	return 'Titulo: ' + col.displayName;
+					}
+				},
+				{ 
+					field: 'costecenterOid', 
+					width: 150,
+					exporterSuppressExport: false,
+					displayName: 'Centro de Custo', 
+					enableCellEdit: false,
+						
+					cellTooltip: 
+					function( row, col ) {
+				      return 'Centro de custo: ' + row.entity.costecenterOid;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},
+				{ 		
+					name: 'situation',
+					displayName: 'Situação', 
+					editableCellTemplate: 'ui-grid/dropdownEditor',
+					width: '30%',
+					cellFilter: 'situationFilter',
+					editDropdownValueLabel: 'situation', 
+					
+					editDropdownOptionsArray: [						
+					    { 
+					    	id: 0, situation: 'Aberto' 
+					    },
+					    {
+					    	id: 1, situation: 'Concluído' 
+					    },
+					    { 
+					    	id: 2, situation: 'Aprovado' 
+					    },
+					    { 
+					    	id: 3, situation: 'Pago' 
+					    }
+					],
+					cellTooltip: 
+					function( row, col ) {		
+				    	return 'Situação: ' + row.entity.situation;
+				    }, 
+				    headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},
+				{ 
+					field: 'date', 
+					width: 120,
+					exporterSuppressExport: false,
+					displayName: 'Data', 
+					enableCellEdit: false,
+						
+					cellTooltip: 
+					function( row, col ) {
+				      return 'Data: ' + row.entity.date;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},				
+				{ 
+					field: 'description',
+					width: 120,
+					exporterSuppressExport: false,
+					displayName: 'Descrição', 
+					enableCellEdit: false,
+						
+					cellTooltip: 
+					function( row, col ) {
+				      return 'Descrição: ' + row.entity.description;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},
+				{ 
+					field: 'value', 
+					width: 150,
+					exporterSuppressExport: false,
+					displayName: 'Valor R$', 
+					enableCellEdit: false,
+						
+					cellTooltip: 
+					function( row, col ) {
+				      return 'Valor: R$' + row.entity.value;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},
+				{ 
+					field: 'paidValue', 
+					width: 200,
+					exporterSuppressExport: false,
+					displayName: 'Valor Adiantamento R$', 
+					enableCellEdit: false,				
+					cellTooltip: 
+					function( row, col ) {
+				      return 'Valor de Adiantamento: R$ ' + row.entity.paidValue;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},
+				{ 
+					field: 'reason', 
+					width: 180,
+					exporterSuppressExport: false,
+					displayName: 'Objetivo da empresa', 
+					enableCellEdit: false,	
+					
+					cellTooltip: 
+					function( row, col ) {					
+				      return 'Objetivo da empresa: ' + row.entity.reason;
+				    }, headerTooltip: 
+				    function( col ) {
+				    	return 'Titulo: ' + col.displayName;
+				    }
+				},	
+			],
+			data: $scope.expense[i].expenseDaughter
+			}
+	}	
+		$scope.gridOptions.data = $scope.expense;
+	};
+	$scope.loadSelects = function() {	// carrega todas informações necessarias para os selects dos forms edição e cadastro
+		UserService.query(function( users ) {			
+			$scope.users = users;
+		}, function( error ) {				
+			toastr.error( error );
+		});		
+	}
+	
+	$scope.gridOptions.appScopeProvider = this;
+	
+	$scope.savesub = function(objFlho) { // salvando no banco a sub despesa
+		
+		objFlho.oidFather = $scope.rowselected.oid; // capturando oid da despesa pai 
+		console.log(objFlho.oidPai);
+		console.log($scope.subexpenses);
+		
+		SubexpenseService.save( objFlho , function(response) {				
+			
+			$scope.expenses = null;
+			toastr.success("Cadastrado com sucesso!");			
+			$scope.load();
+			
+		}, function(err){			
+			toastr.error( 'Erro ' + err.data);
+		})
+	}
+	
+	// verificação de linha
+	$scope.gridOptions.onRegisterApi = function ( gridApi ) {	
+		
+		$scope.gridApi = gridApi;
+		
+		gridApi.selection.on.rowSelectionChanged( $scope, function( row ) {
+		
+			var msg = row.isSelected;
+		    console.log(msg);
+		    
+		    if ( msg ) {
+		    	
+		    	$scope.rows.push( row );
+		    	console.log('teste1');
+		    	console.log($scope.rows);
+		    } else { 
+		    	
+		    	$scope.rows.splice( $scope.rows.indexOf ( row ) );
+		    	console.log('teset2');
+		    	console.log($scope.rows.splice);
+		    }
+		});
+	 
+		gridApi.rowEdit.on.saveRow($scope, function(rowEntity) {
+			
+			console.log(rowEntity);
+	    	$scope.update( rowEntity );
+	    });
+	};	
+	
+	$scope.load();
+}])
+.filter('situationFilter', function() {	
+	var genderHash = {				
+		0: 'Aberto',
+		1: 'Concluído',
+		2: 'Aprovado',
+		3: 'Pago'
+	};	
+	return function(input) {		
+		if (!input) { 			
+			return '';
+		} else {			
+			return genderHash[input];
+		}
+	};
+});
+
